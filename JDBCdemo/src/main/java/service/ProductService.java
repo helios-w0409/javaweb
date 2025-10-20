@@ -2,29 +2,28 @@ package service;
 
 import dao.ProductDAO;
 import model.Product;
-
 import java.util.List;
 
 public class ProductService {
     private ProductDAO dao = new ProductDAO();
 
-    // 以前的分页方法可以保留
+    // ✅ 分页查询（默认查询全部，不筛选）
     public List<Product> getProductsByPage(int page, int limit) {
-        return dao.getProductsByPage(page, limit);
+        return dao.getProductsWithWarehouse(null, null, null, null, page, limit);
     }
 
-    // ✅ 删除 brand 参数
-    public List<Product> getProductsByFilter(String name, Double minPrice, Double maxPrice, int page, int limit) {
-        return dao.getProductsByFilter(name, minPrice, maxPrice, page, limit);
+    // ✅ 带筛选条件的分页查询（支持商品名 + 仓库名 + 价格区间）
+    public List<Product> getProductsByFilter(String name, String warehouseName, Double minPrice, Double maxPrice, int page, int limit) {
+        return dao.getProductsWithWarehouse(name, warehouseName, minPrice, maxPrice, page, limit);
     }
 
-    // ✅ 删除 brand 参数
-    public int getTotalCountByFilter(String name, Double minPrice, Double maxPrice) {
-        return dao.getTotalCountByFilter(name, minPrice, maxPrice);
+    // ✅ 获取筛选后的总记录数（支持仓库名）
+    public int getTotalCountByFilter(String name, String warehouseName, Double minPrice, Double maxPrice) {
+        return dao.getTotalCountWithWarehouse(name, warehouseName, minPrice, maxPrice);
     }
 
-    // 根据商品id查询单个商品
+    // ✅ 根据商品id查询单个商品（带仓库信息）
     public Product getProductById(int id) {
-        return dao.getProductById(id);
+        return dao.getProductByIdWithWarehouse(id);
     }
 }

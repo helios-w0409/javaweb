@@ -27,6 +27,7 @@ public class ProductServlet extends HttpServlet {
 
         // 2. 获取筛选参数
         String name = req.getParameter("name");
+        String warehouseName = req.getParameter("warehouseName"); // ✅ 新增仓库名筛选
         String minPriceStr = req.getParameter("minPrice");
         String maxPriceStr = req.getParameter("maxPrice");
 
@@ -43,9 +44,9 @@ public class ProductServlet extends HttpServlet {
             // 如果价格格式不对，忽略价格筛选
         }
 
-        // 3. 调用服务方法获取分页数据和总记录数
-        List<Product> products = service.getProductsByFilter(name, minPrice, maxPrice, page, limit);
-        int totalCount = service.getTotalCountByFilter(name, minPrice, maxPrice);
+        // 3. 调用服务方法获取分页数据和总记录数（✅ 新增 warehouseName 参数）
+        List<Product> products = service.getProductsByFilter(name, warehouseName, minPrice, maxPrice, page, limit);
+        int totalCount = service.getTotalCountByFilter(name, warehouseName, minPrice, maxPrice);
 
         // 4. 构造 JSON 数据格式
         StringBuilder json = new StringBuilder();
@@ -59,7 +60,9 @@ public class ProductServlet extends HttpServlet {
                     .append("\"id\":").append(p.getId()).append(",")
                     .append("\"name\":\"").append(p.getName()).append("\",")
                     .append("\"price\":").append(p.getPrice()).append(",")
-                    .append("\"stock\":").append(p.getStock())
+                    .append("\"stock\":").append(p.getStock()).append(",")
+                    .append("\"warehouseName\":\"").append(p.getWarehouseName() != null ? p.getWarehouseName() : "").append("\",")
+                    .append("\"warehouseLocation\":\"").append(p.getWarehouseLocation() != null ? p.getWarehouseLocation() : "").append("\"")
                     .append("}");
             if (i < products.size() - 1) {
                 json.append(",");

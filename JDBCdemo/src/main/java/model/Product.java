@@ -6,6 +6,8 @@ public class Product {
     private String name;
     private BigDecimal price;
     private int stock;
+    private String warehouseName;      // 新增
+    private String warehouseLocation;  // 新增
 
     public int getId() {
         return id;
@@ -17,6 +19,22 @@ public class Product {
 
     public String getName() {
         return name;
+    }
+
+    public String getWarehouseName() {
+        return warehouseName;
+    }
+
+    public void setWarehouseName(String warehouseName) {
+        this.warehouseName = warehouseName;
+    }
+
+    public String getWarehouseLocation() {
+        return warehouseLocation;
+    }
+
+    public void setWarehouseLocation(String warehouseLocation) {
+        this.warehouseLocation = warehouseLocation;
     }
 
     public void setName(String name) {
@@ -46,4 +64,7 @@ public class Product {
         this.stock = stock;
     }
     // Getters and setters omitted for brevity
+    public Product() {
+    }
+
 }

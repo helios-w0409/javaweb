@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui-src/dist/css/layui.css" />
     <style>
-        /* 页面整体布局 */
         body, html {
             margin: 0; padding: 0; height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -18,10 +17,9 @@
             display: flex;
             min-height: 100vh;
         }
-        /* 侧边栏 */
         .sidebar {
             width: 220px;
-            background-color: #1E9FFF; /* layui 蓝 */
+            background-color: #1E9FFF;
             color: white;
             padding: 20px 0;
             box-shadow: 3px 0 10px rgba(0,0,0,0.1);
@@ -52,7 +50,6 @@
             background-color: #0C6DFF;
         }
 
-        /* 主体内容 */
         .main-content {
             flex: 1;
             padding: 40px 50px;
@@ -108,7 +105,7 @@
             gap: 12px;
             flex-wrap: wrap;
         }
-        .filter-container input {
+        .filter-container input, .filter-container select {
             padding: 6px 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -133,7 +130,6 @@
 </head>
 <body>
 <div class="page-container">
-    <!-- 侧边栏 -->
     <aside class="sidebar">
         <h3>商城导航</h3>
         <nav>
@@ -146,7 +142,6 @@
         </nav>
     </aside>
 
-    <!-- 主体内容 -->
     <main class="main-content">
         <!-- 商品轮播图 -->
         <div class="layui-carousel" id="productCarousel" style="margin-bottom: 30px;" lay-indicator="inside" lay-arrow="hover">
@@ -170,6 +165,14 @@
             <input type="number" id="minPrice" placeholder="最低价" min="0" />
             <span style="font-weight: 600;">-</span>
             <input type="number" id="maxPrice" placeholder="最高价" min="0" />
+
+            <label for="filterWarehouse">仓库</label>
+            <select id="filterWarehouse">
+                <option value="">全部</option>
+                <option value="上海仓">上海仓</option>
+                <option value="北京仓">北京仓</option>
+                <option value="广州仓">广州仓</option>
+            </select>
 
             <button id="btnFilter" class="layui-btn layui-btn-normal layui-btn-sm filter-btn">筛选</button>
             <button id="btnClear" class="layui-btn layui-btn-primary layui-btn-sm filter-btn">🧹 清空筛选</button>
@@ -195,7 +198,6 @@
         let currentPage = 1;
         const pageSize = 5;
 
-        // 初始化轮播图
         carousel.render({
             elem: '#productCarousel',
             width: '100%',
@@ -204,16 +206,15 @@
             anim: 'fade'
         });
 
-        // 获取筛选条件
         function getFilters() {
             return {
                 name: $('#searchName').val().trim(),
                 minPrice: $('#minPrice').val(),
-                maxPrice: $('#maxPrice').val()
+                maxPrice: $('#maxPrice').val(),
+                warehouseName: $('#filterWarehouse').val() // 新增仓库筛选
             };
         }
 
-        // 加载商品数据
         function loadData(page, limit) {
             const filters = getFilters();
             $.ajax({
@@ -224,7 +225,8 @@
                     limit: limit,
                     name: filters.name,
                     minPrice: filters.minPrice,
-                    maxPrice: filters.maxPrice
+                    maxPrice: filters.maxPrice,
+                    warehouseName: filters.warehouseName // 新增
                 },
                 dataType: 'json',
                 success: function (res) {
@@ -235,6 +237,8 @@
                             { field: 'name', title: '商品名称', minWidth: 200 },
                             { field: 'price', title: '价格', width: 120, sort: true, templet: d => '￥' + d.price },
                             { field: 'stock', title: '库存', width: 100 },
+                            { field: 'warehouseName', title: '仓库名称', width: 140 },
+                            { field: 'warehouseLocation', title: '仓库位置', width: 180 },
                             { title: '操作', width: 140, align: 'center', toolbar: '#actionBar' }
                         ]],
                         data: res.data,
@@ -277,6 +281,7 @@
             $('#searchName').val('');
             $('#minPrice').val('');
             $('#maxPrice').val('');
+            $('#filterWarehouse').val(''); // 清空仓库筛选
             currentPage = 1;
             loadData(currentPage, pageSize);
         });
@@ -287,10 +292,7 @@
                 $.ajax({
                     url: 'CartServlet',
                     method: 'POST',
-                    data: {
-                        productId: data.id,
-                        quantity: 1
-                    },
+                    data: { productId: data.id, quantity: 1 },
                     success: function () {
                         layer.msg('已加入购物车：' + data.name, { icon: 1 });
                     },

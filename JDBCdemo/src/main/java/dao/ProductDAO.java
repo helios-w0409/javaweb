@@ -10,47 +10,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProductDAO {
-    // 原分页查询
-    public List<Product> getProductsByPage(int page, int limit) {
-        List<Product> list = new ArrayList<>();
-        try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM products LIMIT ?, ?";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, (page - 1) * limit);
-            ps.setInt(2, limit);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Product p = new Product(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getBigDecimal("price"),
-                        rs.getInt("stock")
-                );
-                list.add(p);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
 
-    // 根据筛选条件分页查询
-    public List<Product> getProductsByFilter(String name, Double minPrice, Double maxPrice, int page, int limit) {
+    // 分页查询 + 多条件筛选（商品名 + 仓库名 + 价格区间）
+    public List<Product> getProductsWithWarehouse(String name, String warehouseName, Double minPrice, Double maxPrice, int page, int limit) {
         List<Product> list = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection()) {
-            StringBuilder sql = new StringBuilder("SELECT * FROM products WHERE 1=1");
+            StringBuilder sql = new StringBuilder(
+                    "SELECT p.id, p.name, p.price, p.stock, w.name AS warehouseName, w.location AS warehouseLocation " +
+                            "FROM products p LEFT JOIN warehouses w ON p.warehouse_id = w.id WHERE 1=1"
+            );
+
             List<Object> params = new ArrayList<>();
 
             if (name != null && !name.isEmpty()) {
-                sql.append(" AND name LIKE ?");
+                sql.append(" AND p.name LIKE ?");
                 params.add("%" + name + "%");
             }
+
+            if (warehouseName != null && !warehouseName.isEmpty()) {
+                sql.append(" AND w.name LIKE ?");
+                params.add("%" + warehouseName + "%");
+            }
+
             if (minPrice != null) {
-                sql.append(" AND price >= ?");
+                sql.append(" AND p.price >= ?");
                 params.add(minPrice);
             }
+
             if (maxPrice != null) {
-                sql.append(" AND price <= ?");
+                sql.append(" AND p.price <= ?");
                 params.add(maxPrice);
             }
 
@@ -65,12 +53,13 @@ public class ProductDAO {
 
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                Product p = new Product(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getBigDecimal("price"),
-                        rs.getInt("stock")
-                );
+                Product p = new Product();
+                p.setId(rs.getInt("id"));
+                p.setName(rs.getString("name"));
+                p.setPrice(rs.getBigDecimal("price"));
+                p.setStock(rs.getInt("stock"));
+                p.setWarehouseName(rs.getString("warehouseName"));
+                p.setWarehouseLocation(rs.getString("warehouseLocation"));
                 list.add(p);
             }
         } catch (Exception e) {
@@ -79,23 +68,33 @@ public class ProductDAO {
         return list;
     }
 
-    // 根据筛选条件查询总记录数
-    public int getTotalCountByFilter(String name, Double minPrice, Double maxPrice) {
+    // 获取筛选后的总记录数
+    public int getTotalCountWithWarehouse(String name, String warehouseName, Double minPrice, Double maxPrice) {
         int count = 0;
         try (Connection conn = DBUtil.getConnection()) {
-            StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM products WHERE 1=1");
+            StringBuilder sql = new StringBuilder(
+                    "SELECT COUNT(*) FROM products p LEFT JOIN warehouses w ON p.warehouse_id = w.id WHERE 1=1"
+            );
+
             List<Object> params = new ArrayList<>();
 
             if (name != null && !name.isEmpty()) {
-                sql.append(" AND name LIKE ?");
+                sql.append(" AND p.name LIKE ?");
                 params.add("%" + name + "%");
             }
+
+            if (warehouseName != null && !warehouseName.isEmpty()) {
+                sql.append(" AND w.name LIKE ?");
+                params.add("%" + warehouseName + "%");
+            }
+
             if (minPrice != null) {
-                sql.append(" AND price >= ?");
+                sql.append(" AND p.price >= ?");
                 params.add(minPrice);
             }
+
             if (maxPrice != null) {
-                sql.append(" AND price <= ?");
+                sql.append(" AND p.price <= ?");
                 params.add(maxPrice);
             }
 
@@ -114,21 +113,23 @@ public class ProductDAO {
         return count;
     }
 
-    // 根据 ID 查询单个商品
-    public Product getProductById(int id) {
+    // 根据 ID 查询单个商品（带仓库信息）
+    public Product getProductByIdWithWarehouse(int id) {
         Product p = null;
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM products WHERE id = ?";
+            String sql = "SELECT p.id, p.name, p.price, p.stock, w.name AS warehouseName, w.location AS warehouseLocation " +
+                    "FROM products p LEFT JOIN warehouses w ON p.warehouse_id = w.id WHERE p.id = ?";
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                p = new Product(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getBigDecimal("price"),
-                        rs.getInt("stock")
-                );
+                p = new Product();
+                p.setId(rs.getInt("id"));
+                p.setName(rs.getString("name"));
+                p.setPrice(rs.getBigDecimal("price"));
+                p.setStock(rs.getInt("stock"));
+                p.setWarehouseName(rs.getString("warehouseName"));
+                p.setWarehouseLocation(rs.getString("warehouseLocation"));
             }
         } catch (Exception e) {
             e.printStackTrace();
