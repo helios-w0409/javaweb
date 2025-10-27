@@ -8,7 +8,17 @@ public class Product {
     private int stock;
     private String warehouseName;      // 新增
     private String warehouseLocation;  // 新增
+    private int warehouseId;   // 仓库ID（外键）
 
+
+
+    public int getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(int warehouseId) {
+        this.warehouseId = warehouseId;
+    }
     public int getId() {
         return id;
     }

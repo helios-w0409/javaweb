@@ -9,50 +9,40 @@ import service.ProductService;
 import java.io.IOException;
 import java.util.List;
 
+import java.math.BigDecimal;
+
+
 @WebServlet("/ProductServlet")
 public class ProductServlet extends HttpServlet {
-    private final ProductService service = new ProductService(); // 创建 ProductService 实例
+    private final ProductService service = new ProductService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // 1. 获取分页参数
+        // 1. 分页参数
         int page = 1;
         int limit = 10;
-        try {
-            page = Integer.parseInt(req.getParameter("page"));
-        } catch (Exception ignored) {}
-        try {
-            limit = Integer.parseInt(req.getParameter("limit"));
-        } catch (Exception ignored) {}
+        try { page = Integer.parseInt(req.getParameter("page")); } catch (Exception ignored) {}
+        try { limit = Integer.parseInt(req.getParameter("limit")); } catch (Exception ignored) {}
 
-        // 2. 获取筛选参数
+        // 2. 筛选参数
         String name = req.getParameter("name");
-        String warehouseName = req.getParameter("warehouseName"); // ✅ 新增仓库名筛选
+        String warehouseName = req.getParameter("warehouseName");
         String minPriceStr = req.getParameter("minPrice");
         String maxPriceStr = req.getParameter("maxPrice");
 
-        Double minPrice = null;
-        Double maxPrice = null;
+        Double minPrice = null, maxPrice = null;
         try {
-            if (minPriceStr != null && !minPriceStr.isEmpty()) {
-                minPrice = Double.parseDouble(minPriceStr);
-            }
-            if (maxPriceStr != null && !maxPriceStr.isEmpty()) {
-                maxPrice = Double.parseDouble(maxPriceStr);
-            }
-        } catch (NumberFormatException e) {
-            // 如果价格格式不对，忽略价格筛选
-        }
+            if (minPriceStr != null && !minPriceStr.isEmpty()) minPrice = Double.parseDouble(minPriceStr);
+            if (maxPriceStr != null && !maxPriceStr.isEmpty()) maxPrice = Double.parseDouble(maxPriceStr);
+        } catch (NumberFormatException ignored) {}
 
-        // 3. 调用服务方法获取分页数据和总记录数（✅ 新增 warehouseName 参数）
-        List<Product> products = service.getProductsByFilter(name, warehouseName, minPrice, maxPrice, page, limit);
-        int totalCount = service.getTotalCountByFilter(name, warehouseName, minPrice, maxPrice);
+        // 3. 查询数据
+        List<Product> products = service.getProductsByFilter(name, minPrice, maxPrice, warehouseName, page, limit);
+        int totalCount = service.getTotalCountByFilter(name, minPrice, maxPrice, warehouseName);
 
-        // 4. 构造 JSON 数据格式
+        // 4. 构造 JSON
         StringBuilder json = new StringBuilder();
-        json.append("{");
-        json.append("\"totalCount\":").append(totalCount).append(",");
-        json.append("\"data\":[");
+        json.append("{\"totalCount\":").append(totalCount).append(",\"data\":[");
 
         for (int i = 0; i < products.size(); i++) {
             Product p = products.get(i);
@@ -64,15 +54,60 @@ public class ProductServlet extends HttpServlet {
                     .append("\"warehouseName\":\"").append(p.getWarehouseName() != null ? p.getWarehouseName() : "").append("\",")
                     .append("\"warehouseLocation\":\"").append(p.getWarehouseLocation() != null ? p.getWarehouseLocation() : "").append("\"")
                     .append("}");
-            if (i < products.size() - 1) {
-                json.append(",");
-            }
+            if (i < products.size() - 1) json.append(",");
         }
-
         json.append("]}");
 
-        // 5. 设置响应格式为 JSON 并输出数据
         resp.setContentType("application/json;charset=UTF-8");
         resp.getWriter().write(json.toString());
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
+        resp.setContentType("application/json;charset=UTF-8");
+
+        String action = req.getParameter("action");
+
+        try {
+            if ("add".equals(action)) {
+                Product p = new Product();
+                p.setName(req.getParameter("name"));
+                //p.setPrice(Double.parseDouble(req.getParameter("price")));
+                p.setPrice(new BigDecimal(req.getParameter("price")));
+
+                p.setStock(Integer.parseInt(req.getParameter("stock")));
+                p.setWarehouseName(req.getParameter("warehouseName"));
+                p.setWarehouseLocation(req.getParameter("warehouseLocation"));
+
+                service.addProduct(p);
+                resp.getWriter().write("{\"status\":\"success\"}");
+
+            } else if ("update".equals(action)) {
+                Product p = new Product();
+                p.setId(Integer.parseInt(req.getParameter("id")));
+                p.setName(req.getParameter("name"));
+               // p.setPrice(Double.parseDouble(req.getParameter("price")));
+                p.setPrice(new BigDecimal(req.getParameter("price")));
+
+                p.setStock(Integer.parseInt(req.getParameter("stock")));
+                p.setWarehouseName(req.getParameter("warehouseName"));
+                p.setWarehouseLocation(req.getParameter("warehouseLocation"));
+
+                service.updateProduct(p);
+                resp.getWriter().write("{\"status\":\"success\"}");
+
+            } else if ("delete".equals(action)) {
+                int id = Integer.parseInt(req.getParameter("id"));
+                service.deleteProduct(id);
+                resp.getWriter().write("{\"status\":\"success\"}");
+
+            } else {
+                resp.getWriter().write("{\"status\":\"error\",\"message\":\"未知操作\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.getWriter().write("{\"status\":\"error\",\"message\":\"" + e.getMessage() + "\"}");
+        }
     }
 }
